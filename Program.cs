@@ -68,7 +68,7 @@ do
         string? firstAppearance = Console.ReadLine() ?? "";
 
         Console.Write("Enter year created: ");
-        string? yearInput = Console.ReadLine();
+        string? yearInput = Console.ReadLine(); 
 
         if (!UInt64.TryParse(yearInput, out UInt64 yearCreated))
         {
