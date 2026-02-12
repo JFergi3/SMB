@@ -1,167 +1,163 @@
 ﻿﻿using NLog;
 
-string path = Path.Combine(Directory.GetCurrentDirectory(), "nlog.xml");
+string path = Directory.GetCurrentDirectory() + "//nlog.xml";
+
+// create instance of Logger
 var logger = LogManager.Setup().LoadConfigurationFromFile(path).GetCurrentClassLogger();
 
 logger.Info("Program started");
 
 string file = "mario.csv";
-
+// make sure movie file exists
 if (!File.Exists(file))
 {
     logger.Error("File does not exist: {File}", file);
-    Console.WriteLine($"ERROR: File does not exist: {file}");
-    logger.Info("Program ended");
-    return;
 }
-
-// Create parallel lists ONCE (outside the loop)
-List<UInt64> Ids = new();
-List<string> Names = new();
-List<string> Descriptions = new();
-List<string> Species = new();
-List<string> FirstAppearance = new();
-List<UInt64> YearCreated = new();
-
-// Load file ONCE at start (optional but cleaner)
-LoadCharacters(file, Ids, Names, Descriptions, Species, FirstAppearance, YearCreated, logger);
-
-string? choice;
-do
+else
 {
-    Console.WriteLine("1) Add Character");
-    Console.WriteLine("2) Display All Characters");
-    Console.WriteLine("Enter to quit");
-    Console.Write("Choice: ");
-
-    choice = Console.ReadLine();
-    logger.Info("User choice: {Choice}", choice);
-
-    if (choice == "1")
+    // TODO: create user menu
+    string? choice;
+    do
     {
-        Console.Write("Enter new character name: ");
-        string? name = Console.ReadLine();
+        // display choices to user
+        Console.WriteLine("1) Add Character");
+        Console.WriteLine("2) Display All Characters");
+        Console.WriteLine("Enter to quit");
+        Console.Write("Choice: "); // FIX: prompt so user knows to type here
 
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            logger.Error("You must enter a name");
-            Console.WriteLine("You must enter a name.");
-            continue;
-        }
+        // create parallel lists of character details
+        // lists are used since we do not know number of lines of data
+        List<UInt64> Ids = [];
+        List<string> Names = [];
+        List<string> Descriptions = [];
+        List<string> Species = [];
+        List<string> FirstAppearance = [];
+        List<UInt64> YearCreated = [];
 
-        // check for duplicate name (case-insensitive)
-        bool duplicate = Names.Any(n => n.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (duplicate)
-        {
-            logger.Info("Duplicate name {Name}", name);
-            Console.WriteLine("That name already exists.");
-            continue;
-        }
-
-        Console.Write("Enter description: ");
-        string? description = Console.ReadLine() ?? "";
-
-        Console.Write("Enter species: ");
-        string? species = Console.ReadLine() ?? "";
-
-        Console.Write("Enter first appearance: ");
-        string? firstAppearance = Console.ReadLine() ?? "";
-
-        Console.Write("Enter year created: ");
-        string? yearInput = Console.ReadLine(); 
-
-        if (!UInt64.TryParse(yearInput, out UInt64 yearCreated))
-        {
-            Console.WriteLine("Year must be a number.");
-            logger.Error("Invalid year input: {YearInput}", yearInput);
-            continue;
-        }
-
-        UInt64 id = Ids.Count == 0 ? 1 : Ids.Max() + 1;
-
-        // Append to file (write SINGLE values, not lists)
+        // to populate the lists with data, read from the data file
         try
         {
-            using StreamWriter sw = new(file, append: true);
-            sw.WriteLine($"{id},{name},{description},{species},{firstAppearance},{yearCreated}");
+            StreamReader sr = new(file);
+            // first line contains column headers
+            sr.ReadLine();
+            while (!sr.EndOfStream)
+            {
+                string? line = sr.ReadLine();
+                if (line is not null)
+                {
+                    // character details are separated with comma(,)
+                    string[] characterDetails = line.Split(',');
+                    // 1st array element contains id
+                    Ids.Add(UInt64.Parse(characterDetails[0]));
+                    // 2nd array element contains character name
+                    Names.Add(characterDetails[1]);
+                    // 3rd array element contains character description
+                    Descriptions.Add(characterDetails[2]);
+                    Species.Add(characterDetails[3]);
+                    FirstAppearance.Add(characterDetails[4]);
+                    YearCreated.Add(UInt64.Parse(characterDetails[5]));
+                }
+            }
+            sr.Close();
         }
         catch (Exception ex)
         {
-            logger.Error(ex, "Failed to write to file.");
-            Console.WriteLine("Failed to save character.");
-            continue;
+            logger.Error(ex.Message);
         }
 
-        // Add to lists
-        Ids.Add(id);
-        Names.Add(name);
-        Descriptions.Add(description);
-        Species.Add(species);
-        FirstAppearance.Add(firstAppearance);
-        YearCreated.Add(yearCreated);
+        // input selection
+        choice = Console.ReadLine();
+        logger.Info("User choice: {Choice}", choice);
 
-        logger.Info("Character id {Id} added", id);
-        Console.WriteLine("Character added!");
-    }
-    else if (choice == "2")
-    {
-        for (int i = 0; i < Ids.Count; i++)
+        if (choice == "1")
         {
-            Console.WriteLine($"Id: {Ids[i]}");
-            Console.WriteLine($"Name: {Names[i]}");
-            Console.WriteLine($"Description: {Descriptions[i]}");
-            Console.WriteLine($"Species: {Species[i]}");
-            Console.WriteLine($"First appearance: {FirstAppearance[i]}");
-            Console.WriteLine($"Year Created: {YearCreated[i]}");
-            Console.WriteLine();
-        }
-    }
+            // Add Character
+            Console.WriteLine("Enter new character name: ");
+            string? Name = Console.ReadLine();
 
-} while (choice == "1" || choice == "2");
+            if (!string.IsNullOrEmpty(Name))
+            {
+                // check for duplicate name
+                List<string> LowerCaseNames = Names.ConvertAll(n => n.ToLower());
+                if (LowerCaseNames.Contains(Name.ToLower()))
+                {
+                    logger.Info($"Duplicate name {Name}");
+                    Console.WriteLine("That name already exists."); // FIX: give user feedback
+                }
+                else
+                {
+                    // generate id - use max value in Ids + 1
+                    UInt64 Id = Ids.Max() + 1;
+
+                    // input character description
+                    Console.WriteLine("Enter description:");
+                    string? Description = Console.ReadLine() ?? ""; // FIX: avoid null
+
+                    // FIX: these must be SINGLE values, not your List variables
+                    Console.WriteLine("Enter species:");
+                    string characterSpecies = Console.ReadLine() ?? "";
+
+                    Console.WriteLine("Enter first appearance:");
+                    string characterFirstAppearance = Console.ReadLine() ?? "";
+
+                    Console.WriteLine("Enter year created:");
+                    string yearInput = Console.ReadLine() ?? "";
+
+                    // FIX: validate numeric year
+                    if (!UInt64.TryParse(yearInput, out UInt64 characterYearCreated))
+                    {
+                        logger.Error("Invalid year created: {YearInput}", yearInput);
+                        Console.WriteLine("Year created must be a number.");
+                    }
+                    else
+                    {
+                        // create file from data
+                        StreamWriter sw = new(file, true);
+
+                        // FIX: write the SINGLE values, not the Lists
+                        sw.WriteLine($"{Id},{Name},{Description},{characterSpecies},{characterFirstAppearance},{characterYearCreated}");
+                        sw.Close();
+
+                        // add new character details to Lists
+                        Ids.Add(Id);
+                        Names.Add(Name);
+                        Descriptions.Add(Description);
+
+                        // FIX: add the new values (not the list into itself)
+                        Species.Add(characterSpecies);
+                        FirstAppearance.Add(characterFirstAppearance);
+                        YearCreated.Add(characterYearCreated);
+
+                        // log transaction
+                        logger.Info($"Character id {Id} added");
+                        Console.WriteLine("Character added!");
+                    }
+                }
+            }
+            else
+            {
+                logger.Error("You must enter a name");
+                Console.WriteLine("You must enter a name."); // FIX: user feedback
+            }
+        }
+        else if (choice == "2")
+        {
+            // Display All Characters
+            // loop thru Lists
+            for (int i = 0; i < Ids.Count; i++)
+            {
+                // display character details
+                Console.WriteLine($"Id: {Ids[i]}");
+                Console.WriteLine($"Name: {Names[i]}");
+                Console.WriteLine($"Description: {Descriptions[i]}");
+                Console.WriteLine($"Species: {Species[i]}");
+                Console.WriteLine($"First appearance: {FirstAppearance[i]}");
+                Console.WriteLine($"Year Created: {YearCreated[i]}");
+                Console.WriteLine();
+            }
+        }
+
+    } while (choice == "1" || choice == "2");
+}
 
 logger.Info("Program ended");
-
-static void LoadCharacters(
-    string file,
-    List<UInt64> ids,
-    List<string> names,
-    List<string> descriptions,
-    List<string> species,
-    List<string> firstAppearance,
-    List<UInt64> yearCreated,
-    Logger logger)
-{
-    try
-    {
-        using StreamReader sr = new(file);
-
-        // header
-        sr.ReadLine();
-
-        while (!sr.EndOfStream)
-        {
-            string? line = sr.ReadLine();
-            if (string.IsNullOrWhiteSpace(line)) continue;
-
-            string[] parts = line.Split(',');
-
-            // basic safety check
-            if (parts.Length < 6)
-            {
-                logger.Warn("Skipping malformed line: {Line}", line);
-                continue;
-            }
-
-            ids.Add(UInt64.Parse(parts[0]));
-            names.Add(parts[1]);
-            descriptions.Add(parts[2]);
-            species.Add(parts[3]);
-            firstAppearance.Add(parts[4]);
-            yearCreated.Add(UInt64.Parse(parts[5]));
-        }
-    }
-    catch (Exception ex)
-    {
-        logger.Error(ex, "Failed to load characters");
-    }
-}
