@@ -17,6 +17,9 @@ else
 {
     // TODO: create user menu
     string? choice;
+
+    List<Character> characters = new();
+
     do
     {
         // display choices to user
@@ -34,19 +37,22 @@ else
             while (!sr.EndOfStream)
             {
                 string? line = sr.ReadLine();
-                if (line is not null)
+                if (string.IsNullOrEmpty(line))
                 {
-                    // character details are separated with comma(,)
-                    string[] characterDetails = line.Split(',');
-                    // 1st array element contains id
-                    Ids.Add(UInt64.Parse(characterDetails[0]));
-                    // 2nd array element contains character name
-                    Names.Add(characterDetails[1]);
-                    // 3rd array element contains character description
-                    Descriptions.Add(characterDetails[2]);
-                    Species.Add(characterDetails[3]);
-                    FirstAppearance.Add(characterDetails[4]);
-                    YearCreated.Add(UInt64.Parse(characterDetails[5]));
+                    logger.Warn("Empty line in data file");
+                    continue; // skip empty lines
+                }
+
+                Character character = new();
+                {
+                   Id = UInt64.Parse(line.Split(',')[0]),
+                   Name = line.Split(',')[1],
+                     Description = line.Split(',')[2],
+                        Species = line.Split(',')[3],
+                        FirstAppearance = line.Split(',')[4],
+                        YearCreated = UInt64.Parse(line.Split(',')[5])
+                    };
+                    characters.Add(character);
                 }
             }
             sr.Close();
