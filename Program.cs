@@ -25,15 +25,6 @@ else
         Console.WriteLine("Enter to quit");
         Console.Write("Choice: "); // FIX: prompt so user knows to type here
 
-        // create parallel lists of character details
-        // lists are used since we do not know number of lines of data. 
-        List<UInt64> Ids = [];
-        List<string> Names = [];
-        List<string> Descriptions = [];
-        List<string> Species = [];
-        List<string> FirstAppearance = [];
-        List<UInt64> YearCreated = [];
-
         // to populate the lists with data, read from the data file
         try
         {
